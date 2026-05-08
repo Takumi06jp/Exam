@@ -5,6 +5,8 @@ import {
   text,
   timestamp,
 } from "drizzle-orm/pg-core";
+import { serial } from "drizzle-orm/singlestore-core";
+import { number } from "zod";
 
 // Better Auth Tables
 export const user = pgTable("user", {
@@ -82,4 +84,17 @@ export const subscription = pgTable("subscription", {
   metadata: text("metadata"), // JSON string
   customFieldData: text("customFieldData"), // JSON string
   userId: text("userId").references(() => user.id),
+});
+
+export const questions = pgTable("questions", {
+  id: text("id").primaryKey(),
+  category: text("category").notNull(),
+  subcategory: text("subcategory"),
+  languages: text("languages").notNull(),
+  question: text("question").notNull(),
+  choices: text("choices").notNull().array(),
+  answer: text("answer").notNull(),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+  updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+  levels: text("levels"),
 });
