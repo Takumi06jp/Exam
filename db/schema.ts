@@ -5,8 +5,6 @@ import {
   text,
   timestamp,
 } from "drizzle-orm/pg-core";
-import { serial } from "drizzle-orm/singlestore-core";
-import { number } from "zod";
 
 // Better Auth Tables
 export const user = pgTable("user", {
