@@ -6,7 +6,6 @@ import {questions} from './schema';
 
 //Question["Head"][0] = ["次のうち眼窩を構成する骨ではないものは？", "鼻骨", "口蓋骨", "蝶形骨", "上顎骨", 1];
 type Row = {
-  id: string;
   category: string;
   languages: string;
   question: string;
@@ -27,17 +26,14 @@ function loadFromDataJs(): Row[] {
         /Question\["([^"]+)"\]\[\d+\]\s*=\s*\["([^"]+)",\s*"([^"]+)",\s*"([^"]+)",\s*"([^"]+)",\s*"([^"]+)",\s*(\d+)\];/g;
     const Rows: Row[] = [];
     let match;
-    let i = 1;
     while ((match = entryRegex.exec(content)) !== null) {
         Rows.push({
-            id: numberToLetter(i),
             category: match[1],
             languages: "ja",
             question: match[2],
             choices: [match[3], match[4], match[5], match[6]],
             answer: numberToLetter(match[7]),
         });
-        i = i + 1;
     }
     return Rows;
 }

@@ -1,0 +1,914 @@
+ ▐▛███▜▌   Claude Code v2.1.123
+▝▜█████▛▘  Opus 4.7 · Claude Pro
+  ▘▘ ▝▝    ~/github/Exam
+
+  Welcome to Opus 4.7 xhigh! · /effort to tune speed vs. intelligence
+
+❯ Type '{ category: string; question: string; choices: string[] | null; answer: 
+   number; }[]' is not assignable to type 'QuizQuestion[]'.                     
+    Type '{ category: string; question: string; choices: string[] | null;       
+  answer: number; }' is not assignable to type 'QuizQuestion'.                  
+      Types of property 'choices' are incompatible.                             
+        Type 'string[] | null' is not assignable to type 'string[]'.            
+          Type 'null' is not assignable to type 'string[]'.ts(2322)             
+
+  Searched for 2 patterns, read 2 files (ctrl+o to expand)
+
+⏺ Drizzle infers choices as string[] | null because .notNull() was applied
+  before .array() — the array wrapper resets the nullability. Two options: fix
+  the schema (.array().notNull(), requires a migration push) or coalesce in the
+  mapper. The mapper fix is safer since the column is already NOT NULL at the DB
+   level.
+
+⏺ Update(app/dashboard/Exercise/Question/page.tsx)
+  ⎿  Added 1 line, removed 1 line
+      17    return rows.map((row) => ({
+      18      category: row.category,
+      19      question: row.question,
+      20 -    choices: row.choices,                                      
+      20 +    choices: row.choices ?? [],                                
+      21      answer: row.answer.charCodeAt(0) - 96,
+      22    }));
+      23  
+
+⏺ Fixed by coalescing row.choices ?? [] in
+  app/dashboard/Exercise/Question/page.tsx:20. The DB column is NOT NULL so the
+  fallback is never hit at runtime — this is purely to satisfy Drizzle's
+  inferred string[] | null type.
+
+  If you'd prefer the type fix at the schema level, change db/schema.ts:95 from
+  text("choices").notNull().array() to text("choices").array().notNull() (the
+  .notNull() must come after .array() to mark the array itself as non-nullable),
+   then run npx drizzle-kit generate + push.
+
+✻ Baked for 29s
+
+※ recap: Goal: fix a TypeScript error where Drizzle inferred `choices` as `string[] | null` but `QuizQuestion` expects `string[]`. I applied `row.choices ?? []` in page.tsx. Next: verify by running `npm run build` or `npm run lint`. (disable recaps in /config)
+
+❯ /Users/takumi/github/Exam/app/dashboard/Exercise/page.tsxについて、           
+   <Button variant="outline" size="sm">                                         
+                                          <Link                                 
+  href="/dashboard/Exercise/Question?category=Head">頭蓋骨</Link>               
+                                      </Button>                                 
+  を改変して問題数指定を行えるようにしたい                                      
+
+  Read 2 files (ctrl+o to expand)
+
+⏺ 問題数指定を行えるようにします。Exercise ページに入力欄を追加し、Question
+  ページで limit を受け取って絞り込みます。
+
+⏺ Update(app/dashboard/Exercise/page.tsx)
+  ⎿  User rejected update to app/dashboard/Exercise/page.tsx
+
+❯ このボタンを押すと出題ページに移るんだけど、その前に問題数を指定するページを  
+  挟みたいんだ。それを作ってくれるかい？                                        
+
+⏺ 了解。「問題数指定ページ」を間に挟む構成にします。流れは:
+
+  1. Exercise/page.tsx の頭蓋骨ボタン →
+  /dashboard/Exercise/Question/setup?category=Head へ
+  2. setup ページで問題数を指定 →
+  /dashboard/Exercise/Question?category=Head&limit=N へ
+  3. Question ページで limit を受け取りシャッフル後に N 問抽出
+
+  setup ページ用に2ファイル新規作成、既存2ファイルを更新します。
+
+⏺ Write(app/dashboard/Exercise/Question/setup/page.tsx)
+  ⎿  Wrote 33 lines to app/dashboard/Exercise/Question/setup/page.tsx
+       1 import { db } from "@/db/drizzle";
+       2 import { questions } from "@/db/schema";
+       3 import { count, eq } from "drizzle-orm";
+       4 import SetupForm from "./_components/SetupForm";
+       5 
+       6 const categoryLabel: Record<string, string> = {
+       7   Head: "頭部",
+       8   HeadL: "頭部（靭帯）",
+       9   HeadE: "頭部（実習）",
+      10   Artery: "動脈",
+     … +24 lines (ctrl+o to expand)
+
+⏺ Write(app/dashboard/Exercise/Question/setup/_components/SetupForm.tsx)
+  ⎿  Wrote 97 lines to
+     app/dashboard/Exercise/Question/setup/_components/SetupForm.tsx
+       1 "use client";
+       2 
+       3 import { useRouter } from "next/navigation";
+       4 import { useState } from "react";
+       5 import { Button } from "@/components/ui/button";
+       6 import { Input } from "@/components/ui/input";
+       7 import {
+       8   Card,
+       9   CardContent,
+      10   CardFooter,
+     … +88 lines (ctrl+o to expand)
+
+⏺ 次に、Exercise/page.tsx の頭蓋骨ボタンを setup へ向け、Question/page.tsx に
+  limit を受け取らせます。
+
+⏺ Update(app/dashboard/Exercise/page.tsx)
+  ⎿  Added 2 lines, removed 2 lines
+      36                              <CardContent>
+      37                                  <div className="flex flex-wrap 
+          gap-4">
+      38                                      <Button variant="outline" s
+          ize="sm">躯幹骨</Button>
+      39 -                                    <Button variant="outline" s
+         -ize="sm">                                                      
+      40 -                                        <Link href="/dashboard/
+         -Exercise/Question?category=Head">頭蓋骨</Link>                 
+      39 +                                    <Button variant="outline" s
+         +ize="sm" asChild>                                              
+      40 +                                        <Link href="/dashboard/
+         +Exercise/Question/setup?category=Head">頭蓋骨</Link>           
+      41                                      </Button>
+      42                                      <Button variant="outline" s
+          ize="sm">筋肉</Button>
+      43                                      <Button variant="outline" s
+          ize="sm">神経</Button>
+
+  Read 1 file (ctrl+o to expand)
+
+⏺ Write(app/dashboard/Exercise/Question/page.tsx)
+  ⎿  Added 21 lines, removed 9 lines
+      1 -import fs from "fs";                                            
+      2 -import path from "path";                                        
+      1  import QuizClient from "./_components/QuizClient";
+      2  import { db } from "@/db/drizzle";
+      3  import { questions } from "@/db/schema";
+     ...
+      10    answer: number; // 1-indexed
+      11  };
+      12  
+      15 -async function loadQuestions(category?: string): Promise<QuizQu
+         -estion[]> {                                                    
+      13 +async function loadQuestions(                                  
+      14 +  category?: string,                                           
+      15 +  limit?: number,                                              
+      16 +): Promise<QuizQuestion[]> {                                   
+      17    const rows = category
+      18      ? await db.select().from(questions).where(eq(questions.cate
+          gory, category))
+      19      : await db.select().from(questions);
+      19 -  return rows.map((row) => ({                                  
+      20 +  const mapped: QuizQuestion[] = rows.map((row) => ({          
+      21      category: row.category,
+      22      question: row.question,
+      23      choices: row.choices ?? [],
+      24      answer: row.answer.charCodeAt(0) - 96,
+      25    }));
+      25 -                                                               
+      26 +  if (!limit || limit >= mapped.length) return mapped;         
+      27 +  for (let i = mapped.length - 1; i > 0; i--) {                
+      28 +    const j = Math.floor(Math.random() * (i + 1));             
+      29 +    [mapped[i], mapped[j]] = [mapped[j], mapped[i]];           
+      30 +  }                                                            
+      31 +  return mapped.slice(0, limit);                               
+      32  }
+      33  
+      28 -export default async function QuestionPage({ searchParams }: { 
+         -searchParams: { category?: string } }) {                       
+      29 -  const { category } = searchParams;                           
+      30 -  const questions = await loadQuestions(category);             
+      31 -  return <QuizClient questions={questions} />;                 
+      34 +export default async function QuestionPage({                   
+      35 +  searchParams,                                                
+      36 +}: {                                                           
+      37 +  searchParams: { category?: string; limit?: string };         
+      38 +}) {                                                           
+      39 +  const { category, limit } = searchParams;                    
+      40 +  const parsed = limit ? Number(limit) : NaN;                  
+      41 +  const n = Number.isFinite(parsed) && parsed > 0 ? Math.floor(
+         +parsed) : undefined;                                           
+      42 +  const quizQuestions = await loadQuestions(category, n);      
+      43 +  return <QuizClient questions={quizQuestions} />;             
+      44  }
+
+⏺ 完了です。変更内容:
+
+  - 新規 app/dashboard/Exercise/Question/setup/page.tsx — ?category=<code>
+  を受け取り、DB から該当カテゴリーの問題数を集計
+  - 新規 app/dashboard/Exercise/Question/setup/_components/SetupForm.tsx —
+  数値入力＋プリセット（5/10/20/50/全問）で出題数を選び、開始ボタンで
+  Question?category=...&limit=N へ遷移
+  - app/dashboard/Exercise/page.tsx:40 — 頭蓋骨ボタンの遷移先を /setup
+  経由に変更（Button asChild を追加してリンクが正しく機能するように）
+  - app/dashboard/Exercise/Question/page.tsx — limit searchParam
+  を受け取り、サーバー側でシャッフル後に先頭 N 件を抽出。fs/path の未使用 import
+   も削除
+
+  他カテゴリーのボタンも /setup?category=<code>
+  形式にすれば同じ画面を使い回せます。
+
+✻ Baked for 1m 32s
+
+❯ 他のボタンも同じように setup 経由にして                                       
+
+⏺ 他のボタンのカテゴリーコードがわからないので、まずDBやコードからカテゴリー一覧
+  を確認します。
+
+  Searched for 3 patterns, read 1 file, listed 1 directory (ctrl+o to expand)
+⏺ DBに実在するカテゴリーは Head, HeadL, HeadE, Artery のみでした (db/seed.ts +
+  app/dashboard/Exercise/Data/data.js
+  由来)。他のボタンは現状DBにデータがありませんが、setup
+  ページに遷移するようにします。コメントアウト済みの Switch (Bone, skull,
+  Muscle, Vessel ...)
+  を参考に英語コードを推測しました。コードが違う場合は教えてください。
+
+  Read 1 file (ctrl+o to expand)
+
+⏺ Update(app/dashboard/Exercise/page.tsx)
+  ⎿  Added 27 lines, removed 9 lines
+      35                              </CardHeader>
+      36                              <CardContent>
+      37                                  <div className="flex flex-wrap 
+          gap-4">
+      38 -                                    <Button variant="outline" s
+         -ize="sm">躯幹骨</Button>                                       
+      38                                      <Button variant="outline" s
+          ize="sm" asChild>
+      39 +                                        <Link href="/dashboard/
+         +Exercise/Question/setup?category=Bone">躯幹骨</Link>           
+      40 +                                    </Button>                  
+      41 +                                    <Button variant="outline" s
+         +ize="sm" asChild>                                              
+      42                                          <Link href="/dashboard/
+          Exercise/Question/setup?category=Head">頭蓋骨</Link>
+      43                                      </Button>
+      42 -                                    <Button variant="outline" s
+         -ize="sm">筋肉</Button>                                         
+      43 -                                    <Button variant="outline" s
+         -ize="sm">神経</Button>                                         
+      44 -                                    <Button variant="outline" s
+         -ize="sm">血管</Button>                                         
+      45 -                                    <Button variant="outline" s
+         -ize="sm">臓器</Button>                                         
+      46 -                                    <Button variant="outline" s
+         -ize="sm">感覚器</Button>                                       
+      47 -                                    <Button variant="outline" s
+         -ize="sm">末梢神経</Button>                                     
+      48 -                                    <Button variant="outline" s
+         -ize="sm">中枢神経</Button>                                     
+      49 -                                    <Button variant="outline" s
+         -ize="sm">解剖実習</Button>                                     
+      44 +                                    <Button variant="outline" s
+         +ize="sm" asChild>                                              
+      45 +                                        <Link href="/dashboard/
+         +Exercise/Question/setup?category=Muscle">筋肉</Link>           
+      46 +                                    </Button>                  
+      47 +                                    <Button variant="outline" s
+         +ize="sm" asChild>                                              
+      48 +                                        <Link href="/dashboard/
+         +Exercise/Question/setup?category=Nerve">神経</Link>            
+      49 +                                    </Button>                  
+      50 +                                    <Button variant="outline" s
+         +ize="sm" asChild>                                              
+      51 +                                        <Link href="/dashboard/
+         +Exercise/Question/setup?category=Vessel">血管</Link>           
+      52 +                                    </Button>                  
+      53 +                                    <Button variant="outline" s
+         +ize="sm" asChild>                                              
+      54 +                                        <Link href="/dashboard/
+         +Exercise/Question/setup?category=Organ">臓器</Link>            
+      55 +                                    </Button>                  
+      56 +                                    <Button variant="outline" s
+         +ize="sm" asChild>                                              
+      57 +                                        <Link href="/dashboard/
+         +Exercise/Question/setup?category=Sensory">感覚器</Link>        
+      58 +                                    </Button>                  
+      59 +                                    <Button variant="outline" s
+         +ize="sm" asChild>                                              
+      60 +                                        <Link href="/dashboard/
+         +Exercise/Question/setup?category=Peripheral">末梢神経</Link>   
+      61 +                                    </Button>                  
+      62 +                                    <Button variant="outline" s
+         +ize="sm" asChild>                                              
+      63 +                                        <Link href="/dashboard/
+         +Exercise/Question/setup?category=Central">中枢神経</Link>      
+      64 +                                    </Button>                  
+      65 +                                    <Button variant="outline" s
+         +ize="sm" asChild>                                              
+      66 +                                        <Link href="/dashboard/
+         +Exercise/Question/setup?category=Practice">解剖実習</Link>     
+      67 +                                    </Button>                  
+      68                                  </div>
+      69                              </CardContent>
+      70                              <CardFooter>
+
+⏺ Update(app/dashboard/Exercise/page.tsx)
+  ⎿  Added 3 lines, removed 1 line
+       99                              </CardHeader>
+      100                              <CardContent>
+      101                                  <div className="flex flex-wrap
+            gap-4">
+      102 -                                    <Button variant="outline" 
+          -size="sm">組織学</Button>                                     
+      102 +                                    <Button variant="outline" 
+          +size="sm" asChild>                                            
+      103 +                                        <Link href="/dashboard
+          +/Exercise/Question/setup?category=Histology">組織学</Link>    
+      104 +                                    </Button>                 
+      105                                  </div>
+      106                              </CardContent>
+      107                          </Card>
+
+⏺ Update(app/dashboard/Exercise/page.tsx)
+  ⎿  Added 12 lines, removed 4 lines
+      113                              </CardHeader>
+      114                              <CardContent>
+      115                                  <div className="flex flex-wrap
+            gap-4">
+      116 -                                    <Button variant="outline" 
+          -size="sm">試験1回目</Button>                                  
+      117 -                                    <Button variant="outline" 
+          -size="sm">試験2回目</Button>                                  
+      118 -                                    <Button variant="outline" 
+          -size="sm">試験3回目</Button>                                  
+      119 -                                    <Button variant="outline" 
+          -size="sm">口腔生化学</Button>                                 
+      116 +                                    <Button variant="outline" 
+          +size="sm" asChild>                                            
+      117 +                                        <Link href="/dashboard
+          +/Exercise/Question/setup?category=Biochem1">試験1回目</Link>  
+      118 +                                    </Button>                 
+      119 +                                    <Button variant="outline" 
+          +size="sm" asChild>                                            
+      120 +                                        <Link href="/dashboard
+          +/Exercise/Question/setup?category=Biochem2">試験2回目</Link>  
+      121 +                                    </Button>                 
+      122 +                                    <Button variant="outline" 
+          +size="sm" asChild>                                            
+      123 +                                        <Link href="/dashboard
+          +/Exercise/Question/setup?category=Biochem3">試験3回目</Link>  
+      124 +                                    </Button>                 
+      125 +                                    <Button variant="outline" 
+          +size="sm" asChild>                                            
+      126 +                                        <Link href="/dashboard
+          +/Exercise/Question/setup?category=OralBiochem">口腔生化学</Lin
+          +k>                                                            
+      127 +                                    </Button>                 
+      128                                  </div>
+      129                              </CardContent>
+      130                          </Card>
+
+⏺ Update(app/dashboard/Exercise/page.tsx)
+  ⎿  Added 9 lines, removed 3 lines
+      136                              </CardHeader>
+      137                              <CardContent>
+      138                                  <div className="flex flex-wrap
+            gap-4">
+      139 -                                    <Button variant="outline" 
+          -size="sm">試験1回目</Button>                                  
+      140 -                                    <Button variant="outline" 
+          -size="sm">試験2回目</Button>                                  
+      141 -                                    <Button variant="outline" 
+          -size="sm">口腔生理学</Button>                                 
+      139 +                                    <Button variant="outline" 
+          +size="sm" asChild>                                            
+      140 +                                        <Link href="/dashboard
+          +/Exercise/Question/setup?category=Physiology1">試験1回目</Link
+          +>                                                             
+      141 +                                    </Button>                 
+      142 +                                    <Button variant="outline" 
+          +size="sm" asChild>                                            
+      143 +                                        <Link href="/dashboard
+          +/Exercise/Question/setup?category=Physiology2">試験2回目</Link
+          +>                                                             
+      144 +                                    </Button>                 
+      145 +                                    <Button variant="outline" 
+          +size="sm" asChild>                                            
+      146 +                                        <Link href="/dashboard
+          +/Exercise/Question/setup?category=OralPhysiology">口腔生理学</
+          +Link>                                                         
+      147 +                                    </Button>                 
+      148                                  </div>
+      149                              </CardContent>
+      150                          </Card>
+
+⏺ Update(app/dashboard/Exercise/page.tsx)
+  ⎿  Added 9 lines, removed 3 lines
+      156                              </CardHeader>
+      157                              <CardContent>
+      158                                  <div className="flex flex-wrap
+            gap-4">
+      159 -                                    <Button variant="outline" 
+          -size="sm">歯の解剖学</Button>                                 
+      160 -                                    <Button variant="outline" 
+          -size="sm">一般組織発生</Button>                               
+      161 -                                    <Button variant="outline" 
+          -size="sm">口腔組織発生</Button>                               
+      159 +                                    <Button variant="outline" 
+          +size="sm" asChild>                                            
+      160 +                                        <Link href="/dashboard
+          +/Exercise/Question/setup?category=ToothAnatomy">歯の解剖学</Li
+          +nk>                                                           
+      161 +                                    </Button>                 
+      162 +                                    <Button variant="outline" 
+          +size="sm" asChild>                                            
+      163 +                                        <Link href="/dashboard
+          +/Exercise/Question/setup?category=GeneralHistogenesis">一般組 
+          +織発生</Link>                                                 
+      164 +                                    </Button>                 
+      165 +                                    <Button variant="outline" 
+          +size="sm" asChild>                                            
+      166 +                                        <Link href="/dashboard
+          +/Exercise/Question/setup?category=OralHistogenesis">口腔組織発
+          +生</Link>                                                     
+      167 +                                    </Button>                 
+      168                                  </div>
+      169                              </CardContent>
+      170                          </Card>
+
+⏺ setup ページのラベル表示も対応します。
+
+⏺ Update(app/dashboard/Exercise/Question/setup/page.tsx)
+  ⎿  Added 21 lines, removed 1 line
+       4  import SetupForm from "./_components/SetupForm";
+       5  
+       6  const categoryLabel: Record<string, string> = {
+       7 -  Head: "頭部",                                                
+       7 +  Head: "頭蓋骨",                                              
+       8    HeadL: "頭部（靭帯）",
+       9    HeadE: "頭部（実習）",
+      10    Artery: "動脈",
+      11 +  Bone: "躯幹骨",                                              
+      12 +  Muscle: "筋肉",                                              
+      13 +  Nerve: "神経",                                               
+      14 +  Vessel: "血管",                                              
+      15 +  Organ: "臓器",                                               
+      16 +  Sensory: "感覚器",                                           
+      17 +  Peripheral: "末梢神経",                                      
+      18 +  Central: "中枢神経",                                         
+      19 +  Practice: "解剖実習",                                        
+      20 +  Histology: "組織学",                                         
+      21 +  Biochem1: "生化学 試験1回目",                                
+      22 +  Biochem2: "生化学 試験2回目",                                
+      23 +  Biochem3: "生化学 試験3回目",                                
+      24 +  OralBiochem: "口腔生化学",                                   
+      25 +  Physiology1: "生理学 試験1回目",                             
+      26 +  Physiology2: "生理学 試験2回目",                             
+      27 +  OralPhysiology: "口腔生理学",                                
+      28 +  ToothAnatomy: "歯の解剖学",                                  
+      29 +  GeneralHistogenesis: "一般組織発生",                         
+      30 +  OralHistogenesis: "口腔組織発生",                            
+      31  };
+      32  
+      33  export default async function SetupPage({
+
+⏺ 完了です。全カテゴリーボタンが
+  /dashboard/Exercise/Question/setup?category=<code> 経由になりました。
+
+  使用したカテゴリーコード（推測）:
+
+  ┌────────────┬──────────────┬──────────────────────────┐
+  │    タブ    │    ボタン    │          コード          │
+  ├────────────┼──────────────┼──────────────────────────┤
+  │ 解剖学     │ 躯幹骨       │ Bone                     │
+  ├────────────┼──────────────┼──────────────────────────┤
+  │            │ 頭蓋骨       │ Head ✓DB存在             │
+  ├────────────┼──────────────┼──────────────────────────┤
+  │            │ 筋肉         │ Muscle                   │
+  ├────────────┼──────────────┼──────────────────────────┤
+  │            │ 神経         │ Nerve                    │
+  ├────────────┼──────────────┼──────────────────────────┤
+  │            │ 血管         │ Vessel                   │
+  ├────────────┼──────────────┼──────────────────────────┤
+  │            │ 臓器         │ Organ                    │
+  ├────────────┼──────────────┼──────────────────────────┤
+  │            │ 感覚器       │ Sensory                  │
+  ├────────────┼──────────────┼──────────────────────────┤
+  │            │ 末梢神経     │ Peripheral               │
+  ├────────────┼──────────────┼──────────────────────────┤
+  │            │ 中枢神経     │ Central                  │
+  ├────────────┼──────────────┼──────────────────────────┤
+  │            │ 解剖実習     │ Practice                 │
+  ├────────────┼──────────────┼──────────────────────────┤
+  │ 組織学     │ 組織学       │ Histology                │
+  ├────────────┼──────────────┼──────────────────────────┤
+  │ 生化学     │ 試験1〜3     │ Biochem1〜Biochem3       │
+  ├────────────┼──────────────┼──────────────────────────┤
+  │            │ 口腔生化学   │ OralBiochem              │
+  ├────────────┼──────────────┼──────────────────────────┤
+  │ 生理学     │ 試験1〜2     │ Physiology1〜Physiology2 │
+  ├────────────┼──────────────┼──────────────────────────┤
+  │            │ 口腔生理学   │ OralPhysiology           │
+  ├────────────┼──────────────┼──────────────────────────┤
+  │ 口腔解剖学 │ 歯の解剖学   │ ToothAnatomy             │
+  ├────────────┼──────────────┼──────────────────────────┤
+  │            │ 一般組織発生 │ GeneralHistogenesis      │
+  ├────────────┼──────────────┼──────────────────────────┤
+  │            │ 口腔組織発生 │ OralHistogenesis         │
+  └────────────┴──────────────┴──────────────────────────┘
+
+  現状DBに存在するのは Head/HeadL/HeadE/Artery のみなので、Head 以外は setup
+  ページで「0問」と表示されます。シードデータを追加する際にこれらコードを使うか
+  、コードを変えたい場合はお知らせください。
+
+✻ Baked for 2m 6s
+
+※ recap: Goal: route Exercise category buttons through a question-count setup page before the quiz. All buttons now link to `/Question/setup?category=<code>` with guessed codes. Next: confirm the guessed category codes match your intended DB values. (disable recaps in /config)
+
+❯ /Users/takumi/github/Exam/app/dashboard/Exercise/Question/_components/QuizCli 
+  ent.tsxを編集して、問題解答の途中に回答を終了できるようにしたい。途中で終了し 
+  た場合、その時点までの正答率を表示できるようにしたい。                        
+
+⏺ 途中終了ボタンと、回答済み問題数を分母にした正答率表示を追加します。
+
+⏺ Update(app/dashboard/Exercise/Question/_components/QuizClient.tsx)
+  ⎿  Error editing file
+
+  Read 1 file (ctrl+o to expand)
+
+⏺ Update(app/dashboard/Exercise/Question/_components/QuizClient.tsx)
+  ⎿  Added 12 lines
+      41    const [currentIndex, setCurrentIndex] = useState(0);
+      42    const [selected, setSelected] = useState<number | null>(null)
+          ;
+      43    const [score, setScore] = useState(0);
+      44 +  const [answeredCount, setAnsweredCount] = useState(0);       
+      45    const [finished, setFinished] = useState(false);
+      46 +  const [endedEarly, setEndedEarly] = useState(false);         
+      47  
+      48    const current = shuffled[currentIndex];
+      49    const isAnswered = selected !== null;
+     ...
+      52    function handleSelect(choiceNum: number) {
+      53      if (isAnswered) return;
+      54      setSelected(choiceNum);
+      55 +    setAnsweredCount((c) => c + 1);                            
+      56      if (choiceNum === current.answer) {
+      57        setScore((s) => s + 1);
+      58      }
+     ...
+      67      }
+      68    }
+      69  
+      70 +  function handleFinishEarly() {                               
+      71 +    if (finished) return;                                      
+      72 +    if (!window.confirm("ここまでで終了しますか？")) return;   
+      73 +    setEndedEarly(true);                                       
+      74 +    setFinished(true);                                         
+      75 +  }                                                            
+      76 +                                                               
+      77    function handleRestart() {
+      78      setShuffled(shuffle(questions));
+      79      setCurrentIndex(0);
+      80      setSelected(null);
+      81      setScore(0);
+      82 +    setAnsweredCount(0);                                       
+      83      setFinished(false);
+      84 +    setEndedEarly(false);                                      
+      85    }
+      86    function handleQuit() {
+      87      //dashboard/Exercise/に戻る
+
+⏺ Update(app/dashboard/Exercise/Question/_components/QuizClient.tsx)
+  ⎿  Added 22 lines, removed 8 lines
+       89    }
+       90  
+       91    if (finished) {
+       92 -    const pct = Math.round((score / shuffled.length) * 100);  
+       92 +    const denom = endedEarly ? answeredCount : shuffled.length
+          +;                                                             
+       93 +    const pct = denom > 0 ? Math.round((score / denom) * 100) 
+          +: 0;                                                          
+       94      return (
+       95        <div className="flex items-center justify-center min-h-s
+           creen p-8">
+       96          <Card className="w-full max-w-xl">
+       97            <CardHeader>
+       97 -            <CardTitle className="text-2xl">結果</CardTitle>  
+       98 +            <CardTitle className="text-2xl">                  
+       99 +              {endedEarly ? "途中結果" : "結果"}              
+      100 +            </CardTitle>                                      
+      101            </CardHeader>
+      102            <CardContent className="space-y-4">
+      100 -            <p className="text-lg">                           
+      101 -              {score} / {shuffled.length} 問正解（{pct}%）    
+      102 -            </p>                                              
+      103 -            <Progress value={pct} />                          
+      103 +            {denom > 0 ? (                                    
+      104 +              <>                                              
+      105 +                <p className="text-lg">                       
+      106 +                  {score} / {denom} 問正解（{pct}%）          
+      107 +                </p>                                          
+      108 +                <Progress value={pct} />                      
+      109 +              </>                                             
+      110 +            ) : (                                             
+      111 +              <p className="text-lg">回答した問題はありません<
+          +/p>                                                           
+      112 +            )}                                                
+      113 +            {endedEarly && (                                  
+      114 +              <p className="text-sm text-muted-foreground">   
+      115 +                全 {shuffled.length} 問中 {answeredCount} 問に
+          +回答しました                                                  
+      116 +              </p>                                            
+      117 +            )}                                                
+      118            </CardContent>
+      105 -          <CardFooter>                                        
+      119 +          <CardFooter className="flex gap-2">                 
+      120              <Button onClick={handleRestart}>もう一度</Button>
+      107 -            <Button onClick={handleQuit}>終了</Button>        
+      121 +            <Button variant="outline" onClick={handleQuit}>終 
+          +了</Button>                                                   
+      122            </CardFooter>
+      123          </Card>
+      124        </div>
+
+⏺ Update(app/dashboard/Exercise/Question/_components/QuizClient.tsx)
+  ⎿  Added 7 lines, removed 2 lines
+      127  
+      128    return (
+      129      <div className="flex flex-col items-center min-h-screen p-
+           8 max-w-2xl mx-auto">
+      130 -      <div className="w-full mb-2 flex justify-between text-sm
+          - text-muted-foreground">                                      
+      130 +      <div className="w-full mb-2 flex justify-between items-c
+          +enter text-sm text-muted-foreground">                         
+      131          <span>
+      132            {currentIndex + 1} / {shuffled.length}
+      133          </span>
+      134 -        <span>正解: {score}</span>                            
+      134 +        <div className="flex items-center gap-3">             
+      135 +          <span>正解: {score}</span>                          
+      136 +          <Button variant="outline" size="sm" onClick={handleF
+          +inishEarly}>                                                  
+      137 +            終了する                                          
+      138 +          </Button>                                           
+      139 +        </div>                                                
+      140        </div>
+      141        <Progress
+      142          value={(currentIndex / shuffled.length) * 100}
+
+⏺ 完了です。app/dashboard/Exercise/Question/_components/QuizClient.tsx の変更点:
+
+  - answeredCount（回答済み問題数）と endedEarly（途中終了フラグ）の state
+  を追加
+  - handleSelect で回答時に answeredCount をインクリメント
+  - 問題画面の右上に「終了する」ボタンを配置（window.confirm で誤クリック防止）
+  - 結果画面のロジックを更新:
+    - 途中終了の場合は 回答済み問題数を分母 に正答率を計算
+    - 通常完走の場合は従来どおり全問数を分母に使用
+    - タイトルを「途中結果」/「結果」で切り替え
+    - 「全 N 問中 M 問に回答しました」の補足表示
+    - 0問回答で終了したケースもハンドリング
+  - handleRestart で新規 state もリセット
+
+✻ Crunched for 1m 19s
+
+❯ 結果画面で、間違えた問題一覧を見られるようにしたい。出題した問題のidを抽出し  
+  、それを元にDBから引っ張り出して、それをカードで表示させるようにせよ          
+
+⏺ 問題ID追跡 → server action で間違えた問題をDB取得 →
+  結果画面でカード表示、の流れで実装します。
+
+  Read 1 file (ctrl+o to expand)
+
+⏺ Update(app/dashboard/Exercise/Question/page.tsx)
+  ⎿  Added 2 lines
+       4  import { eq } from "drizzle-orm";
+       5  
+       6  export type QuizQuestion = {
+       7 +  id: number;                                                  
+       8    category: string;
+       9    question: string;
+      10    choices: string[];
+     ...
+      19      ? await db.select().from(questions).where(eq(questions.cate
+          gory, category))
+      20      : await db.select().from(questions);
+      21    const mapped: QuizQuestion[] = rows.map((row) => ({
+      22 +    id: row.id,                                                
+      23      category: row.category,
+      24      question: row.question,
+      25      choices: row.choices ?? [],
+⏺ server action ファイルを作成します。
+
+⏺ Write(app/dashboard/Exercise/Question/actions.ts)
+  ⎿  Wrote 23 lines to app/dashboard/Exercise/Question/actions.ts
+       1 "use server";
+       2 
+       3 import { db } from "@/db/drizzle";
+       4 import { questions } from "@/db/schema";
+       5 import { inArray } from "drizzle-orm";
+       6 import type { QuizQuestion } from "./page";
+       7 
+       8 export async function getQuestionsByIds(
+       9   ids: number[],
+      10 ): Promise<QuizQuestion[]> {
+     … +13 lines (ctrl+o to expand)
+
+  Read 1 file (ctrl+o to expand)
+
+⏺ Update(app/dashboard/Exercise/Question/_components/QuizClient.tsx)
+  ⎿  Added 2 lines, removed 2 lines
+      1  "use client";
+      2  
+      3 -import { useState } from "react";                               
+      3 +import { useEffect, useState } from "react";                    
+      4  import { Button } from "@/components/ui/button";
+      5  import {
+      6    Card,
+     ...
+      12  import { Badge } from "@/components/ui/badge";
+      13  import { Progress } from "@/components/ui/progress";
+      14  import type { QuizQuestion } from "../page";
+      15 -import { Link } from "lucide-react";                           
+      15 +import { getQuestionsByIds } from "../actions";                
+      16  
+      17  function shuffle<T>(arr: T[]): T[] {
+      18    const a = [...arr];
+
+⏺ Update(app/dashboard/Exercise/Question/_components/QuizClient.tsx)
+  ⎿  Added 5 lines
+      44    const [answeredCount, setAnsweredCount] = useState(0);
+      45    const [finished, setFinished] = useState(false);
+      46    const [endedEarly, setEndedEarly] = useState(false);
+      47 +  const [wrongAnswers, setWrongAnswers] = useState<            
+      48 +    { id: number; selected: number }[]                         
+      49 +  >([]);                                                       
+      50 +  const [wrongDetails, setWrongDetails] = useState<QuizQuestion
+         +[] | null>(null);                                              
+      51 +  const [loadingWrong, setLoadingWrong] = useState(false);     
+      52  
+      53    const current = shuffled[currentIndex];
+      54    const isAnswered = selected !== null;
+
+⏺ Update(app/dashboard/Exercise/Question/_components/QuizClient.tsx)
+  ⎿  Added 25 lines
+      60      setAnsweredCount((c) => c + 1);
+      61      if (choiceNum === current.answer) {
+      62        setScore((s) => s + 1);
+      63 +    } else {                                                   
+      64 +      setWrongAnswers((arr) => [                               
+      65 +        ...arr,                                                
+      66 +        { id: current.id, selected: choiceNum },               
+      67 +      ]);                                                      
+      68      }
+      69    }
+      70  
+      71 +  useEffect(() => {                                            
+      72 +    if (!finished) return;                                     
+      73 +    if (wrongAnswers.length === 0) {                           
+      74 +      setWrongDetails([]);                                     
+      75 +      return;                                                  
+      76 +    }                                                          
+      77 +    let cancelled = false;                                     
+      78 +    setLoadingWrong(true);                                     
+      79 +    getQuestionsByIds(wrongAnswers.map((w) => w.id))           
+      80 +      .then((rows) => {                                        
+      81 +        if (!cancelled) setWrongDetails(rows);                 
+      82 +      })                                                       
+      83 +      .finally(() => {                                         
+      84 +        if (!cancelled) setLoadingWrong(false);                
+      85 +      });                                                      
+      86 +    return () => {                                             
+      87 +      cancelled = true;                                        
+      88 +    };                                                         
+      89 +  }, [finished, wrongAnswers]);                                
+      90 +                                                               
+      91    function handleNext() {
+      92      if (currentIndex + 1 >= shuffled.length) {
+      93        setFinished(true);
+
+⏺ Update(app/dashboard/Exercise/Question/_components/QuizClient.tsx)
+  ⎿  Added 2 lines
+      112      setAnsweredCount(0);
+      113      setFinished(false);
+      114      setEndedEarly(false);
+      115 +    setWrongAnswers([]);                                      
+      116 +    setWrongDetails(null);                                    
+      117    }
+      118    function handleQuit() {
+      119      //dashboard/Exercise/に戻る
+
+⏺ 結果画面に間違えた問題カードのリストを追加します。
+
+⏺ Update(app/dashboard/Exercise/Question/_components/QuizClient.tsx)
+  ⎿  Added 63 lines, removed 2 lines
+      123    if (finished) {
+      124      const denom = endedEarly ? answeredCount : shuffled.length
+           ;
+      125      const pct = denom > 0 ? Math.round((score / denom) * 100) 
+           : 0;
+      126 +    const selectedById = new Map(                             
+      127 +      wrongAnswers.map((w) => [w.id, w.selected]),            
+      128 +    );                                                        
+      129      return (
+      127 -      <div className="flex items-center justify-center min-h-s
+          -creen p-8">                                                   
+      128 -        <Card className="w-full max-w-xl">                    
+      130 +      <div className="flex flex-col items-center min-h-screen 
+          +p-8 max-w-2xl mx-auto gap-6">                                 
+      131 +        <Card className="w-full">                             
+      132            <CardHeader>
+      133              <CardTitle className="text-2xl">
+      134                {endedEarly ? "途中結果" : "結果"}
+     ...
+      156              <Button variant="outline" onClick={handleQuit}>終
+           了</Button>
+      157            </CardFooter>
+      158          </Card>
+      159 +                                                              
+      160 +        {wrongAnswers.length > 0 && (                         
+      161 +          <div className="w-full space-y-3">                  
+      162 +            <h2 className="text-xl font-bold">                
+      163 +              間違えた問題（{wrongAnswers.length}問）         
+      164 +            </h2>                                             
+      165 +            {loadingWrong && (                                
+      166 +              <p className="text-sm text-muted-foreground">読 
+          +み込み中...</p>                                               
+      167 +            )}                                                
+      168 +            {wrongDetails?.map((q) => {                       
+      169 +              const userChoice = selectedById.get(q.id);      
+      170 +              return (                                        
+      171 +                <Card key={q.id} className="w-full">          
+      172 +                  <CardHeader>                                
+      173 +                    <Badge variant="outline" className="w-fit 
+          +mb-2">                                                        
+      174 +                      {categoryLabel[q.category] ?? q.category
+          +}                                                             
+      175 +                    </Badge>                                  
+      176 +                    <CardTitle className="text-base leading-re
+          +laxed">                                                       
+      177 +                      {q.question}                            
+      178 +                    </CardTitle>                              
+      179 +                  </CardHeader>                               
+      180 +                  <CardContent className="space-y-2">         
+      181 +                    {q.choices.map((choice, i) => {           
+      182 +                      const choiceNum = i + 1;                
+      183 +                      const isAnswer = choiceNum === q.answer;
+      184 +                      const isUserChoice = choiceNum === userC
+          +hoice;                                                        
+      185 +                      let cls =                               
+      186 +                        "border rounded-md px-3 py-2 text-sm f
+          +lex items-start gap-2";                                       
+      187 +                      if (isAnswer)                           
+      188 +                        cls +=                                
+      189 +                          " border-green-600 bg-green-50 dark:
+          +bg-green-950";                                                
+      190 +                      else if (isUserChoice)                  
+      191 +                        cls += " border-red-600 bg-red-50 dark
+          +:bg-red-950";                                                 
+      192 +                      return (                                
+      193 +                        <div key={i} className={cls}>         
+      194 +                          <span className="font-bold shrink-0"
+          +>                                                             
+      195 +                            {choiceLabel[i]}                  
+      196 +                          </span>                             
+      197 +                          <span className="flex-1">{choice}</s
+          +pan>                                                          
+      198 +                          {isAnswer && (                      
+      199 +                            <span className="text-xs text-gree
+          +n-700 dark:text-green-400 shrink-0">                          
+      200 +                              正解                            
+      201 +                            </span>                           
+      202 +                          )}                                  
+      203 +                          {isUserChoice && !isAnswer && (     
+      204 +                            <span className="text-xs text-red-
+          +700 dark:text-red-400 shrink-0">                              
+      205 +                              あなたの解答                    
+      206 +                            </span>                           
+      207 +                          )}                                  
+      208 +                        </div>                                
+      209 +                      );                                      
+      210 +                    })}                                       
+      211 +                  </CardContent>                              
+      212 +                </Card>                                       
+      213 +              );                                              
+      214 +            })}                                               
+      215 +          </div>                                              
+      216 +        )}                                                    
+      217        </div>
+      218      );
+      219    }
+
+⏺ 完了です。変更点:
+
+  - app/dashboard/Exercise/Question/page.tsx — QuizQuestion 型に id
+  を追加、loadQuestions で row.id を含めるように
+  - app/dashboard/Exercise/Question/actions.ts（新規）— getQuestionsByIds(ids)
+  server action で inArray 条件によりDBから問題を取得
+  - app/dashboard/Exercise/Question/_components/QuizClient.tsx:
+    - wrongAnswers: { id, selected }[] state を追加、不正解時に記録
+    - finished が true になった時点で useEffect 内から server action
+  を呼び、wrongDetails を取得
+    - 結果カードの下に「間違えた問題（N問）」セクションを表示
+    - 各カードで4択を表示し、正解は緑枠＋「正解」ラベル、ユーザーが選んだ誤答は
+  赤枠＋「あなたの解答」ラベル
+    - handleRestart で wrongAnswers / wrongDetails もリセット
+
+✻ Cooked for 1m 59s
+
+※ recap: Building a quiz feature for exam prep; just added a results screen that fetches wrong-answer questions from the DB via a server action and shows them as cards. Next: verify it works end-to-end in the browser. (disable recaps in /config)
+
+❯ /resume 
+  ⎿  Resume cancelled
+
+❯ /exit                                                                         
+  ⎿  Catch you later!
+
+❯ /rename MainTimeline 
+  ⎿  Session renamed to: MainTimeline
+
+❯ /resume 
+  ⎿  Resume cancelled

@@ -10,6 +10,7 @@ import{ Skeleton} from "@/components/ui/skeleton";
 import{Checkbox}from "@/components/ui/checkbox";
 import{Switch}from "@/components/ui/switch";
 import{Separator}from "@/components/ui/separator";
+import Link from "next/link";
 
 export default function PlaygroundPage() {
     return (
@@ -34,16 +35,42 @@ export default function PlaygroundPage() {
                             </CardHeader>
                             <CardContent>
                                 <div className="flex flex-wrap gap-4">
-                                    <Button variant="outline" size="sm">躯幹骨</Button>
-                                    <Button variant="outline" size="sm">頭蓋骨</Button>
-                                    <Button variant="outline" size="sm">筋肉</Button>
-                                    <Button variant="outline" size="sm">神経</Button>
-                                    <Button variant="outline" size="sm">血管</Button>
-                                    <Button variant="outline" size="sm">臓器</Button>
-                                    <Button variant="outline" size="sm">感覚器</Button>
-                                    <Button variant="outline" size="sm">末梢神経</Button>
-                                    <Button variant="outline" size="sm">中枢神経</Button>
-                                    <Button variant="outline" size="sm">解剖実習</Button>
+                                    <Button variant="outline" size="sm" asChild>
+                                        <Link href="/dashboard/Exercise/Question/setup?category=Bone">躯幹骨</Link>
+                                    </Button>
+                                    <Button variant="outline" size="sm" asChild>
+                                        <Link href="/dashboard/Exercise/Question/setup?category=Head">頭蓋骨</Link>
+                                    </Button>
+                                    <Button variant="outline" size="sm" asChild>
+                                        <Link href="/dashboard/Exercise/Question/setup?category=Muscle">筋肉</Link>
+                                    </Button>
+                                    <Button variant="outline" size="sm" asChild>
+                                        <Link href="/dashboard/Exercise/Question/setup?category=Nerve">神経</Link>
+                                    </Button>
+                                    <Button variant="outline" size="sm" asChild>
+                                        <Link href="/dashboard/Exercise/Question/setup?category=Vessel">血管</Link>
+                                    </Button>
+                                    <Button variant="outline" size="sm" asChild>
+                                        <Link href="/dashboard/Exercise/Question/setup?category=Organ">臓器</Link>
+                                    </Button>
+                                    <Button variant="outline" size="sm" asChild>
+                                        <Link href="/dashboard/Exercise/Question/setup?category=Sensory">感覚器</Link>
+                                    </Button>
+                                    <Button variant="outline" size="sm" asChild>
+                                        <Link href="/dashboard/Exercise/Question/setup?category=Peripheral">末梢神経</Link>
+                                    </Button>
+                                    <Button variant="outline" size="sm" asChild>
+                                        <Link href="/dashboard/Exercise/Question/setup?category=Central">中枢神経</Link>
+                                    </Button>
+                                    <Button variant="outline" size="sm" asChild>
+                                        <Link href="/dashboard/Exercise/Question/setup?category=Practice">解剖実習</Link>
+                                    </Button>
+                                    <Button variant="outline" size="sm" asChild>
+                                        <Link href="/dashboard/Exercise/Question/setup?category=HeadL">頭蓋骨（ラテン名）</Link>
+                                    </Button>
+                                    <Button variant="outline" size="sm" asChild>
+                                        <Link href="/dashboard/Exercise/Question/setup?category=HeadE">頭蓋骨（英語名）</Link>
+                                    </Button>
                                 </div>
                             </CardContent>
                             <CardFooter>
@@ -78,7 +105,9 @@ export default function PlaygroundPage() {
                             </CardHeader>
                             <CardContent>
                                 <div className="flex flex-wrap gap-4">
-                                    <Button variant="outline" size="sm">組織学</Button>
+                                    <Button variant="outline" size="sm" asChild>
+                                        <Link href="/dashboard/Exercise/Question/setup?category=Histology">組織学</Link>
+                                    </Button>
                                 </div>
                             </CardContent>
                         </Card>
@@ -90,10 +119,18 @@ export default function PlaygroundPage() {
                             </CardHeader>
                             <CardContent>
                                 <div className="flex flex-wrap gap-4">
-                                    <Button variant="outline" size="sm">試験1回目</Button>
-                                    <Button variant="outline" size="sm">試験2回目</Button>
-                                    <Button variant="outline" size="sm">試験3回目</Button>
-                                    <Button variant="outline" size="sm">口腔生化学</Button>
+                                    <Button variant="outline" size="sm" asChild>
+                                        <Link href="/dashboard/Exercise/Question/setup?category=Biochem1">試験1回目</Link>
+                                    </Button>
+                                    <Button variant="outline" size="sm" asChild>
+                                        <Link href="/dashboard/Exercise/Question/setup?category=Biochem2">試験2回目</Link>
+                                    </Button>
+                                    <Button variant="outline" size="sm" asChild>
+                                        <Link href="/dashboard/Exercise/Question/setup?category=Biochem3">試験3回目</Link>
+                                    </Button>
+                                    <Button variant="outline" size="sm" asChild>
+                                        <Link href="/dashboard/Exercise/Question/setup?category=OralBiochem">口腔生化学</Link>
+                                    </Button>
                                 </div>
                             </CardContent>
                         </Card>
@@ -105,9 +142,15 @@ export default function PlaygroundPage() {
                             </CardHeader>
                             <CardContent>
                                 <div className="flex flex-wrap gap-4">
-                                    <Button variant="outline" size="sm">試験1回目</Button>
-                                    <Button variant="outline" size="sm">試験2回目</Button>
-                                    <Button variant="outline" size="sm">口腔生理学</Button>
+                                    <Button variant="outline" size="sm" asChild>
+                                        <Link href="/dashboard/Exercise/Question/setup?category=Physiology1">試験1回目</Link>
+                                    </Button>
+                                    <Button variant="outline" size="sm" asChild>
+                                        <Link href="/dashboard/Exercise/Question/setup?category=Physiology2">試験2回目</Link>
+                                    </Button>
+                                    <Button variant="outline" size="sm" asChild>
+                                        <Link href="/dashboard/Exercise/Question/setup?category=OralPhysiology">口腔生理学</Link>
+                                    </Button>
                                 </div>
                             </CardContent>
                         </Card>
@@ -119,9 +162,15 @@ export default function PlaygroundPage() {
                             </CardHeader>
                             <CardContent>
                                 <div className="flex flex-wrap gap-4">
-                                    <Button variant="outline" size="sm">歯の解剖学</Button>
-                                    <Button variant="outline" size="sm">一般組織発生</Button>
-                                    <Button variant="outline" size="sm">口腔組織発生</Button>
+                                    <Button variant="outline" size="sm" asChild>
+                                        <Link href="/dashboard/Exercise/Question/setup?category=ToothAnatomy">歯の解剖学</Link>
+                                    </Button>
+                                    <Button variant="outline" size="sm" asChild>
+                                        <Link href="/dashboard/Exercise/Question/setup?category=GeneralHistogenesis">一般組織発生</Link>
+                                    </Button>
+                                    <Button variant="outline" size="sm" asChild>
+                                        <Link href="/dashboard/Exercise/Question/setup?category=OralHistogenesis">口腔組織発生</Link>
+                                    </Button>
                                 </div>
                             </CardContent>
                         </Card>

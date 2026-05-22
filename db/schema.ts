@@ -3,8 +3,10 @@ import {
   integer,
   pgTable,
   text,
+  serial,
   timestamp,
 } from "drizzle-orm/pg-core";
+
 
 // Better Auth Tables
 export const user = pgTable("user", {
@@ -85,14 +87,23 @@ export const subscription = pgTable("subscription", {
 });
 
 export const questions = pgTable("questions", {
-  id: text("id").primaryKey(),
+  id: serial("id").primaryKey(),
   category: text("category").notNull(),
   subcategory: text("subcategory"),
-  languages: text("languages").notNull(),
   question: text("question").notNull(),
   choices: text("choices").notNull().array(),
   answer: text("answer").notNull(),
   createdAt: timestamp("createdAt").notNull().defaultNow(),
   updatedAt: timestamp("updatedAt").notNull().defaultNow(),
   levels: text("levels"),
+});
+
+export const answers = pgTable("answers", {
+  id: serial("id").primaryKey(),
+  questionId: text("questionId").notNull().references(() => questions.id),
+  Qcategory: text("Qcategory").notNull().references(() => questions.category),
+  userId: text("userId").notNull().references(() => user.id),
+  answer: text("answer").notNull(),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+  updatedAt: timestamp("updatedAt").notNull().defaultNow(),
 });
