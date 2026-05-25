@@ -5,8 +5,8 @@ import SetupForm from "./_components/SetupForm";
 
 const categoryLabel: Record<string, string> = {
   Head: "頭蓋骨",
-  HeadL: "頭部（靭帯）",
-  HeadE: "頭部（実習）",
+  HeadL: "頭部(ラテン語)",
+  HeadE: "頭部（英語）",
   Artery: "動脈",
   Bone: "躯幹骨",
   Muscle: "筋肉",

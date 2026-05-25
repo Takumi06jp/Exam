@@ -1,6 +1,8 @@
 import fs from 'fs';
 import path from 'path';
 
+import {sql} from 'drizzle-orm';
+
 import {db} from './drizzle';
 import {questions} from './schema';
 
@@ -41,8 +43,12 @@ function loadFromDataJs(): Row[] {
 async function main() {
     const Rows = loadFromDataJs();
     console.log(Rows.length);
+/*
     await db.delete(questions);
     console.log("Deleted existing questions");
+*/
+    await db.execute(sql`TRUNCATE TABLE questions RESTART IDENTITY CASCADE`);
+    console.log("Truncated existing questions and reset id sequence");
     await db.insert(questions).values(Rows);
 }
 
