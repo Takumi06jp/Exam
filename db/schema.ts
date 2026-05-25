@@ -100,10 +100,14 @@ export const questions = pgTable("questions", {
 
 export const answers = pgTable("answers", {
   id: serial("id").primaryKey(),
-  questionId: text("questionId").notNull().references(() => questions.id),
-  Qcategory: text("Qcategory").notNull().references(() => questions.category),
-  userId: text("userId").notNull().references(() => user.id),
+  questionId: integer("questionId")
+    .notNull()
+    .references(() => questions.id, { onDelete: "cascade" }),
+  Qcategory: text("Qcategory").notNull(),
+  userId: text("userId")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
   answer: text("answer").notNull(),
+  isCorrect: boolean("isCorrect").notNull(),
   createdAt: timestamp("createdAt").notNull().defaultNow(),
-  updatedAt: timestamp("updatedAt").notNull().defaultNow(),
 });

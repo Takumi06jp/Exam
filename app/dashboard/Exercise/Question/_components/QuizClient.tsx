@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -12,7 +12,14 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import type { QuizQuestion } from "../page";
-import { getQuestionsByIds } from "../actions";
+import { getQuestionsByIds, saveQuizResults } from "../actions";
+
+type AnswerEntry = {
+  questionId: number;
+  category: string;
+  answer: string;
+  isCorrect: boolean;
+};
 
 function shuffle<T>(arr: T[]): T[] {
   const a = [...arr];
@@ -47,8 +54,10 @@ export default function QuizClient({
   const [wrongAnswers, setWrongAnswers] = useState<
     { id: number; selected: number }[]
   >([]);
+  const [allAnswers, setAllAnswers] = useState<AnswerEntry[]>([]);
   const [wrongDetails, setWrongDetails] = useState<QuizQuestion[] | null>(null);
   const [loadingWrong, setLoadingWrong] = useState(false);
+  const saveCalledRef = useRef(false);
 
   const current = shuffled[currentIndex];
   const isAnswered = selected !== null;
@@ -58,7 +67,17 @@ export default function QuizClient({
     if (isAnswered) return;
     setSelected(choiceNum);
     setAnsweredCount((c) => c + 1);
-    if (choiceNum === current.answer) {
+    const correct = choiceNum === current.answer;
+    setAllAnswers((arr) => [
+      ...arr,
+      {
+        questionId: current.id,
+        category: current.category,
+        answer: String.fromCharCode(96 + choiceNum),
+        isCorrect: correct,
+      },
+    ]);
+    if (correct) {
       setScore((s) => s + 1);
     } else {
       setWrongAnswers((arr) => [
@@ -88,6 +107,15 @@ export default function QuizClient({
     };
   }, [finished, wrongAnswers]);
 
+  useEffect(() => {
+    if (!finished || saveCalledRef.current) return;
+    if (allAnswers.length === 0) return;
+    saveCalledRef.current = true;
+    saveQuizResults(allAnswers).catch((err) => {
+      console.error("Failed to save quiz results:", err);
+    });
+  }, [finished, allAnswers]);
+
   function handleNext() {
     if (currentIndex + 1 >= shuffled.length) {
       setFinished(true);
@@ -113,7 +141,9 @@ export default function QuizClient({
     setFinished(false);
     setEndedEarly(false);
     setWrongAnswers([]);
+    setAllAnswers([]);
     setWrongDetails(null);
+    saveCalledRef.current = false;
   }
   function handleQuit() {
     //dashboard/Exercise/に戻る

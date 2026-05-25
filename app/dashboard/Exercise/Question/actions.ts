@@ -1,8 +1,10 @@
 "use server";
 
 import { db } from "@/db/drizzle";
-import { questions } from "@/db/schema";
+import { answers, questions } from "@/db/schema";
 import { inArray } from "drizzle-orm";
+import { auth } from "@/lib/auth";
+import { headers } from "next/headers";
 import type { QuizQuestion } from "./page";
 
 export async function getQuestionsByIds(
@@ -20,4 +22,27 @@ export async function getQuestionsByIds(
     choices: row.choices ?? [],
     answer: row.answer.charCodeAt(0) - 96,
   }));
+}
+
+export type SaveAnswerEntry = {
+  questionId: number;
+  category: string;
+  answer: string;
+  isCorrect: boolean;
+};
+
+export async function saveQuizResults(entries: SaveAnswerEntry[]) {
+  if (entries.length === 0) return;
+  const session = await auth.api.getSession({ headers: await headers() });
+  const userId = session?.user?.id;
+  if (!userId) throw new Error("Unauthorized");
+  await db.insert(answers).values(
+    entries.map((e) => ({
+      questionId: e.questionId,
+      Qcategory: e.category,
+      userId,
+      answer: e.answer,
+      isCorrect: e.isCorrect,
+    })),
+  );
 }
