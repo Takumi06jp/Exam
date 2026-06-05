@@ -36,7 +36,6 @@ function prioritizeQuestions(
   const incorrect  = qs.filter(q => statusByQid.get(q.id) === "incorrect");
   const correct    = qs.filter(q => statusByQid.get(q.id) === "correct");
 
-
   if (filter === "incorrect") {
     return [
       ...shuffleInPlace([...incorrect]),

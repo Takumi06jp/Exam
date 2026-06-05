@@ -110,4 +110,5 @@ export const answers = pgTable("answers", {
   answer: text("answer").notNull(),
   isCorrect: boolean("isCorrect").notNull(),
   createdAt: timestamp("createdAt").notNull().defaultNow(),
+  updateAt: timestamp("updateAt").notNull().defaultNow(),
 });
