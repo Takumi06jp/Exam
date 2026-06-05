@@ -32,15 +32,23 @@ function prioritizeQuestions(
 ): QuizQuestion[] {
   if (filter === "random") return shuffleInPlace([...qs]).slice(0, limit);
 
-  // TODO(human): qs を未回答 (unanswered) / 不正解 (incorrect) / 正解 (correct) の
-  // 3 グループに分け、filter に応じた優先順位で並べ替えて先頭 limit 件を返す。
-  //
-  // - filter === "unanswered" のとき: unanswered → incorrect → correct の順
-  // - filter === "incorrect" のとき:  incorrect → unanswered → correct の順
-  // - statusByQid に該当 id が無い問題は "unanswered" とみなす
-  // - 各グループ内はランダム順（shuffleInPlace を利用）にする
-  // - 上位優先グループだけで limit に満たない場合、下位グループから補充する
-  return [];
+  const unanswered = qs.filter(q => !statusByQid.has(q.id));
+  const incorrect  = qs.filter(q => statusByQid.get(q.id) === "incorrect");
+  const correct    = qs.filter(q => statusByQid.get(q.id) === "correct");
+
+
+  if (filter === "incorrect") {
+    return [
+      ...shuffleInPlace([...incorrect]),
+      ...shuffleInPlace([...unanswered]),
+      ...shuffleInPlace([...correct]),
+    ].slice(0, limit);
+  }
+  return [
+    ...shuffleInPlace([...unanswered]),
+    ...shuffleInPlace([...incorrect]),
+    ...shuffleInPlace([...correct]),
+  ].slice(0, limit);
 }
 
 async function loadQuestions(
