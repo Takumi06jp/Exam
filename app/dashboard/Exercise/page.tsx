@@ -27,7 +27,12 @@ export default async function ExercisePage() {
       <h1 className="text-4xl font-bold mb-8">問題選択</h1>
 
       <div>
-        <h2 className="text-2xl font-bold mb-4">問題一覧</h2>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-2xl font-bold">問題一覧</h2>
+          <Button asChild size="sm">
+            <Link href="/dashboard/Exercise/Custom">カスタム出題</Link>
+          </Button>
+        </div>
         <Tabs defaultValue={subjects[0].key}>
           <TabsList>
             {subjects.map((s) => (
