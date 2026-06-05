@@ -30,5 +30,5 @@ export default async function CustomPage() {
     ),
   }));
 
-  return <CustomSetupForm subjects={subjectSummaries} />;
+  return <CustomSetupForm groups={subjectSummaries} />;
 }

@@ -68,8 +68,10 @@ export default async function ExercisePage() {
                 {s.key === "anatomy" && (
                   <CardFooter>
                     <div className="flex items-center gap-2">
-                      <Button variant="outline" size="sm">
-                        カスタム出題
+                      <Button variant="outline" size="sm" asChild>
+                        <Link href={`/dashboard/Exercise/Custom/${s.key}`}>
+                          カスタム出題
+                        </Link>
                       </Button>
                     </div>
                   </CardFooter>
