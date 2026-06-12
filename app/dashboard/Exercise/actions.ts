@@ -1,8 +1,8 @@
 "use server";
 
 import { db } from "@/db/drizzle";
-import { answers } from "@/db/schema";
-import { and, desc, eq, inArray } from "drizzle-orm";
+import { answers, answerStats } from "@/db/schema";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
@@ -26,32 +26,46 @@ export async function getCategoryStats(
   const userId = await requireUserId();
   if (!userId) return empty;
 
+  // TODO(human): answerStats を Qcategory で GROUP BY して、各カテゴリの
+  // { Qcategory: string, total: number, correct: number } を取得するクエリを書く。
+  //
+  //   total   = そのユーザー×カテゴリの行数（= 回答済み問題数）
+  //   correct = そのうち lastIsCorrect = true の行数
+  //
+  // ヒント:
+  // 1) drizzle の .select({ alias: sql<T>`SQL式` }) で SELECT 列を自由に指定できる。
+  // 2) total は COUNT(*)::int で取得（PostgreSQL の COUNT は bigint なので int キャストで JS の number に揃える）。
+  // 3) correct は PostgreSQL 標準の集約フィルタ
+  //      COUNT(*) FILTER (WHERE 条件)
+  //    を使うと「条件を満たす行だけを数える」が CASE 文無しで書ける。
+  // 4) drizzle でカラムを SQL 式に埋める時は ${answerStats.lastIsCorrect} と書けば
+  //    "answerStats"."lastIsCorrect" にコンパイルされる。
+  // 5) where は and(eq(answerStats.userId, userId), inArray(answerStats.Qcategory, categories)) の形。
+  // 6) groupBy(answerStats.Qcategory) を忘れずに。
+  //
+  // 期待する rows の型: { Qcategory: string; total: number; correct: number }[]
+  //const rows: { Qcategory: string; total: number; correct: number }[] = [];
   const rows = await db
-    .select()
-    .from(answers)
-    .where(
-      and(
-        eq(answers.userId, userId),
-        inArray(answers.Qcategory, categories),
-      ),
-    )
-    .orderBy(desc(answers.createdAt));
+    .select({
+      Qcategory: answerStats.Qcategory,
+      total:   sql<number>`COUNT(*)::int`,
+      correct: sql<number>`COUNT(*) FILTER (where ${answerStats.lastIsCorrect})::int`,
+    })
+    .from(answerStats)
+    .where(and(eq(answerStats.userId, userId), inArray(answerStats.Qcategory, categories)))
+    .groupBy(answerStats.Qcategory);
 
-  const latestByQ = new Map<number, (typeof rows)[number]>();
-  for (const r of rows) {
-    if (!latestByQ.has(r.questionId)) latestByQ.set(r.questionId, r);
-  }
 
-  const stats = new Map<string, CategoryStat>(
+  const statsByCat = new Map<string, CategoryStat>(
     categories.map((c) => [c, { category: c, correct: 0, total: 0 }]),
   );
-  for (const r of latestByQ.values()) {
-    const s = stats.get(r.Qcategory);
+  for (const r of rows) {
+    const s = statsByCat.get(r.Qcategory);
     if (!s) continue;
-    s.total += 1;
-    if (r.isCorrect) s.correct += 1;
+    s.total = r.total;
+    s.correct = r.correct;
   }
-  return categories.map((c) => stats.get(c)!);
+  return categories.map((c) => statsByCat.get(c)!);
 }
 
 export async function resetCategoryAnswers(category: string) {

@@ -127,6 +127,7 @@ export const answerStats = pgTable(
     correctCount: integer("correctCount").notNull().default(0),
     incorrectCount: integer("incorrectCount").notNull().default(0),
     lastIsCorrect: boolean("lastIsCorrect").notNull(),
+    lastAnswer: text("lastAnswer").notNull(),
     updatedAt: timestamp("updatedAt").notNull().defaultNow(),
   },
   (table) => [primaryKey({ columns: [table.userId, table.questionId] }),]

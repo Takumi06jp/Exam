@@ -1,7 +1,7 @@
 import QuizClient from "./_components/QuizClient";
 import { db } from "@/db/drizzle";
-import { answers, questions } from "@/db/schema";
-import { and, desc, eq, inArray } from "drizzle-orm";
+import { answerStats, questions } from "@/db/schema";
+import { and, eq, inArray } from "drizzle-orm";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 
@@ -78,18 +78,24 @@ async function loadQuestions(
   }
 
   const qids = mapped.map((q) => q.id);
-  const answerRows = qids.length
+  const statRows = qids.length
     ? await db
-        .select()
-        .from(answers)
-        .where(and(eq(answers.userId, userId), inArray(answers.questionId, qids)))
-        .orderBy(desc(answers.createdAt))
+        .select({
+          questionId: answerStats.questionId,
+          lastIsCorrect: answerStats.lastIsCorrect,
+        })
+        .from(answerStats)
+        .where(
+          and(
+            eq(answerStats.userId, userId),
+            inArray(answerStats.questionId, qids),
+          ),
+        )
     : [];
 
   const statusByQid = new Map<number, AnswerStatus>();
-  for (const r of answerRows) {
-    if (statusByQid.has(r.questionId)) continue;
-    statusByQid.set(r.questionId, r.isCorrect ? "correct" : "incorrect");
+  for (const r of statRows) {
+    statusByQid.set(r.questionId, r.lastIsCorrect ? "correct" : "incorrect");
   }
 
   return prioritizeQuestions(mapped, statusByQid, filter, effectiveLimit);

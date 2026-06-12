@@ -52,6 +52,7 @@ export async function saveQuizResults(entries: SaveAnswerEntry[]) {
     correctCount: e.isCorrect ? 1 : 0,
     incorrectCount: e.isCorrect ? 0 : 1,
     lastIsCorrect: e.isCorrect,
+    lastAnswer: e.answer,
   }));
 
   await db.batch([
@@ -62,21 +63,11 @@ export async function saveQuizResults(entries: SaveAnswerEntry[]) {
       .onConflictDoUpdate({
         target: [answerStats.userId, answerStats.questionId],
         set: {
-          // TODO(human): 既存行の集計値を更新するロジックを書く。
-          // - correctCount   : 既存値 + 今回の値（累積）
-          // - incorrectCount : 既存値 + 今回の値（累積）
-          // - lastIsCorrect  : 今回の値で上書き
-          // - updatedAt      : 現在時刻に更新
-          //
-          // ヒント:
-          // - drizzle の sql テンプレートタグで `${answerStats.correctCount}` と書くと
-          //   "answerStats"."correctCount" にコンパイルされる（既存行の値の参照）
-          // - PostgreSQL の予約語 `excluded."colName"` で「INSERT しようとしていた値」を参照できる
-          //   sql テンプレ内に直接 sql`excluded."correctCount"` のように書く
-          // - lastIsCorrect は累積ではなく上書きなので excluded の値そのまま
-          // - updatedAt は JS の new Date() でも sql`NOW()` でも OK
-
-          lastIsCorrect: 
+          correctCount: sql`${answerStats.correctCount} + excluded."correctCount"`,
+          incorrectCount: sql`${answerStats.incorrectCount} + excluded."incorrectCount"`,
+          lastIsCorrect: sql`excluded."lastIsCorrect"`,
+          lastAnswer: sql`excluded."lastAnswer"`,
+          updatedAt: sql`NOW()`,
         },
       }),
   ]);

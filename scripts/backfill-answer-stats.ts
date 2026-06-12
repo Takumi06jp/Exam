@@ -26,16 +26,18 @@ async function main() {
     ),
     latest AS (
       SELECT DISTINCT ON ("userId","questionId")
-        "userId", "questionId", "isCorrect" AS last_is_correct
+        "userId", "questionId",
+        "isCorrect" AS last_is_correct,
+        "answer"    AS last_answer
       FROM answers
       ORDER BY "userId", "questionId", "createdAt" DESC
     )
     INSERT INTO "answerStats"
-      ("userId","questionId","Qcategory","correctCount","incorrectCount","lastIsCorrect","updatedAt")
+      ("userId","questionId","Qcategory","correctCount","incorrectCount","lastIsCorrect","lastAnswer","updatedAt")
     SELECT
       a."userId", a."questionId", a."Qcategory",
       a.correct_count, a.incorrect_count,
-      l.last_is_correct, a.updated_at
+      l.last_is_correct, l.last_answer, a.updated_at
     FROM aggregated a
     JOIN latest l USING ("userId","questionId")
     ON CONFLICT ("userId","questionId") DO UPDATE SET
@@ -43,6 +45,7 @@ async function main() {
       "correctCount"   = EXCLUDED."correctCount",
       "incorrectCount" = EXCLUDED."incorrectCount",
       "lastIsCorrect"  = EXCLUDED."lastIsCorrect",
+      "lastAnswer"     = EXCLUDED."lastAnswer",
       "updatedAt"      = EXCLUDED."updatedAt"
   `);
 
