@@ -64,9 +64,9 @@ export default function CustomSetupForm({
   };
 
   const selectAll = () => {
-    // TODO(human): groups の中で total > 0 のものすべてを selectedKeys に入れる。
-    // ヒント: 新しい Set を作って setSelectedKeys に渡す（immutable update）。
-    // disabled な (total === 0) ものは含めないこと。
+    setSelectedKeys(
+      new Set(groups.filter((g) => g.total > 0).map((g) => g.key)),
+    );
   };
 
   const clearAll = () => {

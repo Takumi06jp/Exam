@@ -1,8 +1,8 @@
 "use server";
 
 import { db } from "@/db/drizzle";
-import { answers, questions } from "@/db/schema";
-import { inArray } from "drizzle-orm";
+import { answers, answerStats, questions } from "@/db/schema";
+import { inArray, sql } from "drizzle-orm";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import type { QuizQuestion } from "./page";
@@ -36,13 +36,48 @@ export async function saveQuizResults(entries: SaveAnswerEntry[]) {
   const session = await auth.api.getSession({ headers: await headers() });
   const userId = session?.user?.id;
   if (!userId) throw new Error("Unauthorized");
-  await db.insert(answers).values(
-    entries.map((e) => ({
-      questionId: e.questionId,
-      Qcategory: e.category,
-      userId,
-      answer: e.answer,
-      isCorrect: e.isCorrect,
-    })),
-  );
+
+  const answersRows = entries.map((e) => ({
+    questionId: e.questionId,
+    Qcategory: e.category,
+    userId,
+    answer: e.answer,
+    isCorrect: e.isCorrect,
+  }));
+
+  const statsRows = entries.map((e) => ({
+    userId,
+    questionId: e.questionId,
+    Qcategory: e.category,
+    correctCount: e.isCorrect ? 1 : 0,
+    incorrectCount: e.isCorrect ? 0 : 1,
+    lastIsCorrect: e.isCorrect,
+  }));
+
+  await db.batch([
+    db.insert(answers).values(answersRows),
+    db
+      .insert(answerStats)
+      .values(statsRows)
+      .onConflictDoUpdate({
+        target: [answerStats.userId, answerStats.questionId],
+        set: {
+          // TODO(human): 既存行の集計値を更新するロジックを書く。
+          // - correctCount   : 既存値 + 今回の値（累積）
+          // - incorrectCount : 既存値 + 今回の値（累積）
+          // - lastIsCorrect  : 今回の値で上書き
+          // - updatedAt      : 現在時刻に更新
+          //
+          // ヒント:
+          // - drizzle の sql テンプレートタグで `${answerStats.correctCount}` と書くと
+          //   "answerStats"."correctCount" にコンパイルされる（既存行の値の参照）
+          // - PostgreSQL の予約語 `excluded."colName"` で「INSERT しようとしていた値」を参照できる
+          //   sql テンプレ内に直接 sql`excluded."correctCount"` のように書く
+          // - lastIsCorrect は累積ではなく上書きなので excluded の値そのまま
+          // - updatedAt は JS の new Date() でも sql`NOW()` でも OK
+
+          lastIsCorrect: 
+        },
+      }),
+  ]);
 }

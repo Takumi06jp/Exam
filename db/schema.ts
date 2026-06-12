@@ -5,7 +5,9 @@ import {
   text,
   serial,
   timestamp,
+  primaryKey,
 } from "drizzle-orm/pg-core";
+//import { use } from "react";
 
 
 // Better Auth Tables
@@ -110,5 +112,22 @@ export const answers = pgTable("answers", {
   answer: text("answer").notNull(),
   isCorrect: boolean("isCorrect").notNull(),
   createdAt: timestamp("createdAt").notNull().defaultNow(),
-  //updateAt: timestamp("updateAt").notNull().defaultNow(),
 });
+
+export const answerStats = pgTable(
+  "answerStats",
+  {
+    userId: text("userId")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    questionId: integer("questionId")
+      .notNull()
+      .references(() => questions.id, { onDelete: "cascade" }),
+    Qcategory: text("Qcategory").notNull(),
+    correctCount: integer("correctCount").notNull().default(0),
+    incorrectCount: integer("incorrectCount").notNull().default(0),
+    lastIsCorrect: boolean("lastIsCorrect").notNull(),
+    updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+  },
+  (table) => [primaryKey({ columns: [table.userId, table.questionId] }),]
+);
