@@ -23,32 +23,13 @@ export async function getWrongQuestions(
   const userId = session?.user?.id;
   if (!userId) return [];
 
-  // TODO(human): answerStats から「最新回答が不正解」な行を取得する。
-  //
-  // 必要な条件:
-  //   1) userId が一致
-  //   2) lastIsCorrect = false （最新の回答が不正解だったもの）
-  //   3) category 引数が指定されている場合のみ、Qcategory が一致
-  //
-  // ヒント:
-  // - drizzle で「必要に応じて条件を足す」パターンは、
-  //     const filters = [必須条件1, 必須条件2];
-  //     if (オプション) filters.push(オプション条件);
-  //   とした上で .where(and(...filters)) と展開するのが定石。
-  // - SELECT する列: { questionId, lastAnswer, answeredAt }
-  //   - answeredAt は answerStats.updatedAt をエイリアスとして使う
-  //     （回答時刻専用カラムは作らず、updatedAt で代用する設計）
-  // - .orderBy(desc(answerStats.updatedAt)) で「新しく間違えた順」に並べる。
-  //   (desc は drizzle-orm から import 済み)
-  //
-  // 期待する wrongRows の型:
-  //   { questionId: number; lastAnswer: string; answeredAt: Date }[]
-  const wrongRows: {
-    questionId: number;
-    lastAnswer: string;
-    answeredAt: Date;
-  }[] = [];
-
+  const filters = [eq(answerStats.userId, userId),eq(answerStats.lastIsCorrect, false)];
+  if (category){filters.push(eq(answerStats.Qcategory,category))}
+  const wrongRows = await db
+    .select({ questionId:answerStats.questionId,lastAnswer:answerStats.lastAnswer,answeredAt:answerStats.updatedAt})
+    .from(answerStats)
+    .where(and(...filters))
+    .orderBy(desc(answerStats.updatedAt));
   if (wrongRows.length === 0) return [];
 
   const qIds = wrongRows.map((r) => r.questionId);

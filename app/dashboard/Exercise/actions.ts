@@ -25,26 +25,6 @@ export async function getCategoryStats(
   if (categories.length === 0) return empty;
   const userId = await requireUserId();
   if (!userId) return empty;
-
-  // TODO(human): answerStats を Qcategory で GROUP BY して、各カテゴリの
-  // { Qcategory: string, total: number, correct: number } を取得するクエリを書く。
-  //
-  //   total   = そのユーザー×カテゴリの行数（= 回答済み問題数）
-  //   correct = そのうち lastIsCorrect = true の行数
-  //
-  // ヒント:
-  // 1) drizzle の .select({ alias: sql<T>`SQL式` }) で SELECT 列を自由に指定できる。
-  // 2) total は COUNT(*)::int で取得（PostgreSQL の COUNT は bigint なので int キャストで JS の number に揃える）。
-  // 3) correct は PostgreSQL 標準の集約フィルタ
-  //      COUNT(*) FILTER (WHERE 条件)
-  //    を使うと「条件を満たす行だけを数える」が CASE 文無しで書ける。
-  // 4) drizzle でカラムを SQL 式に埋める時は ${answerStats.lastIsCorrect} と書けば
-  //    "answerStats"."lastIsCorrect" にコンパイルされる。
-  // 5) where は and(eq(answerStats.userId, userId), inArray(answerStats.Qcategory, categories)) の形。
-  // 6) groupBy(answerStats.Qcategory) を忘れずに。
-  //
-  // 期待する rows の型: { Qcategory: string; total: number; correct: number }[]
-  //const rows: { Qcategory: string; total: number; correct: number }[] = [];
   const rows = await db
     .select({
       Qcategory: answerStats.Qcategory,
@@ -71,11 +51,11 @@ export async function getCategoryStats(
 export async function resetCategoryAnswers(category: string) {
   const userId = await requireUserId();
   if (!userId) throw new Error("Unauthorized");
-  await db
-    .delete(answers)
-    .where(
-      and(eq(answers.userId, userId), eq(answers.Qcategory, category)),
-    );
+  // TODO(human): 下の resetSubjectAnswers / resetAllAnswers を参考に、
+  //   answers と answerStats の両方から
+  //   「userId が一致 かつ Qcategory が引数 category と一致」の行を削除する。
+  //   db.batch([...]) で 2 つの DELETE を 1 リクエストにまとめること。
+  //   （現状はどちらも削除していないので、実装しないと「1教科のみリセット」ボタンが動きません）
   revalidatePath("/dashboard/Exercise");
 }
 
@@ -83,17 +63,31 @@ export async function resetSubjectAnswers(categories: string[]) {
   if (categories.length === 0) return;
   const userId = await requireUserId();
   if (!userId) throw new Error("Unauthorized");
-  await db
-    .delete(answers)
-    .where(
-      and(eq(answers.userId, userId), inArray(answers.Qcategory, categories)),
-    );
+  await db.batch([
+    db
+      .delete(answers)
+      .where(
+        and(eq(answers.userId, userId), inArray(answers.Qcategory, categories)),
+      ),
+    db
+      .delete(answerStats)
+      .where(
+        and(
+          eq(answerStats.userId, userId),
+          inArray(answerStats.Qcategory, categories),
+        ),
+      ),
+  ]);
   revalidatePath("/dashboard/Exercise");
 }
 
 export async function resetAllAnswers() {
   const userId = await requireUserId();
   if (!userId) throw new Error("Unauthorized");
-  await db.delete(answers).where(eq(answers.userId, userId));
+  // TODO(human): 上の resetSubjectAnswers を参考に、
+  //   answers と answerStats の両方から
+  //   「userId が一致」する行をすべて削除する。
+  //   category による絞り込みは不要（そのユーザーの回答をまるごと消す関数）。
+  //   db.batch([...]) で 2 つの DELETE を 1 リクエストにまとめること。
   revalidatePath("/dashboard/Exercise");
 }
